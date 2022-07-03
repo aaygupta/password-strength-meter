@@ -7,6 +7,7 @@ class PasswordStrengthMeter {
             ripple: document.querySelector('.input-group .ripple'),
             percentage: document.querySelector('.strength-percent span'),
             label: document.querySelector('.strength-label'),
+            instructions: document.querySelector('.strength-instructions ul'),
             handleInput: e => {
                 if(meter.input.value.length === 0) {
                     meter.label.innerHTML = "Strength";
@@ -21,6 +22,8 @@ class PasswordStrengthMeter {
                     meter.label.innerHTML = "Strong";
                     meter.addClass('strong');
                 }
+
+                meter.toggleInstructions();
             },
             toggleInput: e => {
                 const type = meter.input.getAttribute('type');
@@ -36,9 +39,24 @@ class PasswordStrengthMeter {
                     meter.icon.innerHTML = '👀';
                     meter.ripple.style.cssText = 'border-radius:50%; width:35px; height:35px; right:10px; z-index:1;';
                     meter.input.style.color = '#fff';
-                    meter.input.style.background = '#112d37';
+                    meter.input.style.background = 'rgba(255,255,255,.2)';
                     meter.icon.style.fontSize = '25px';
                 }
+            },
+            toggleInstructions: () => {
+                const getScoreElement = score => meter.instructions.querySelector('li[data-score="'+score+'"]');
+                Array(5).fill(0).map((_, i) => getScoreElement(i+1).classList.remove('fade'));
+
+                if(meter.input.value.length >= 8) 
+                    getScoreElement(1).classList.add('fade');
+                if((/[a-z]/.test(meter.input.value))) 
+                    getScoreElement(2).classList.add('fade');
+                if((/[A-Z]/.test(meter.input.value))) 
+                    getScoreElement(3).classList.add('fade');
+                if((/\d+/.test(meter.input.value))) 
+                    getScoreElement(4).classList.add('fade');
+                if((/[`!@#$%^&*()_,.~]/.test(meter.input.value))) 
+                    getScoreElement(5).classList.add('fade');
             },
             addClass: className => {
                 meter.percentage.classList.remove('weak');

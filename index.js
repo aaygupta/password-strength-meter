@@ -8,24 +8,51 @@ class PasswordStrengthMeter {
             percentage: document.querySelector('.strength-percent span'),
             label: document.querySelector('.strength-label'),
             instructions: document.querySelector('.strength-instructions ul'),
+            options: [
+                { id: 0, value: "Strength", minDiversity: 0, minLength: 0 },
+                { id: 1, value: "Weak", minDiversity: 2, minLength: 4 },
+                { id: 2, value: "Medium", minDiversity: 4, minLength: 6 },
+                { id: 3, value: "Strong", minDiversity: 4, minLength: 8 }
+            ],
+            rules: [
+                { id: 0, regex: '[a-z]' },
+                { id: 1, regex: '[A-Z]' },
+                { id: 2, regex: '[0-9]' },
+                { id: 3, regex: '[`!@#$%^&*()_,.~]' }
+            ],
             handleInput: e => {
-                if(meter.input.value.length === 0) {
-                    meter.label.innerHTML = "Strength";
-                    meter.addClass();
-                } else if(meter.input.value.length <= 4) {
-                    meter.label.innerHTML = "Weak";
-                    meter.addClass('weak');
-                } else if(meter.input.value.length <= 7) {
-                    meter.label.innerHTML = "Average";
-                    meter.addClass('average');
+                e.preventDefault();
+                let score = meter.calculateScore(meter.input.value);
+                if(score.length > meter.options[0].minLength && score.length < meter.options[1].minLength) {
+                    meter.label.innerHTML = meter.options[1].value;
+                    meter.addClass(meter.options[1].value.toLowerCase());
                 } else {
-                    meter.label.innerHTML = "Strong";
-                    meter.addClass('strong');
+                    meter.label.innerHTML = meter.options[score.id].value;
+                    meter.addClass(meter.options[score.id].value.toLowerCase());
                 }
 
-                meter.toggleInstructions();
+                meter.toggleInstructions(score);
             },
-            toggleInput: e => {
+            calculateScore: (password = '') => {
+                let score = {}
+
+                score.contains = meter.rules
+                    .filter(rule => new RegExp(`${rule.regex}`).test(password))
+                    .map(rule => rule.id)
+
+                score.length = password.length;
+
+                let fulfilledOptions = meter.options
+                    .filter(option => score.contains.length >= option.minDiversity)
+                    .filter(option => score.length >= option.minLength)
+                    .sort((o1, o2) => o2.id - o1.id)
+                    .map(option => ({id: option.id, value: option.value}))
+
+                Object.assign(score, fulfilledOptions[0])
+
+                return score;
+            },
+            toggleInput: () => {
                 const type = meter.input.getAttribute('type');
                 if(type === 'password') {
                     meter.input.setAttribute('type', 'text');
@@ -43,24 +70,19 @@ class PasswordStrengthMeter {
                     meter.icon.style.fontSize = '25px';
                 }
             },
-            toggleInstructions: () => {
+            toggleInstructions: score => {
                 const getScoreElement = score => meter.instructions.querySelector('li[data-score="'+score+'"]');
                 Array(5).fill(0).map((_, i) => getScoreElement(i+1).classList.remove('fade'));
 
-                if(meter.input.value.length >= 8) 
-                    getScoreElement(1).classList.add('fade');
-                if((/[a-z]/.test(meter.input.value))) 
-                    getScoreElement(2).classList.add('fade');
-                if((/[A-Z]/.test(meter.input.value))) 
-                    getScoreElement(3).classList.add('fade');
-                if((/\d+/.test(meter.input.value))) 
-                    getScoreElement(4).classList.add('fade');
-                if((/[`!@#$%^&*()_,.~]/.test(meter.input.value))) 
-                    getScoreElement(5).classList.add('fade');
+                if(score.length >= meter.options[3].minLength) getScoreElement(1).classList.add('fade');
+                if(score.contains.includes(0)) getScoreElement(2).classList.add('fade');
+                if(score.contains.includes(1)) getScoreElement(3).classList.add('fade');
+                if(score.contains.includes(2)) getScoreElement(4).classList.add('fade');
+                if(score.contains.includes(3)) getScoreElement(5).classList.add('fade');
             },
             addClass: className => {
                 meter.percentage.classList.remove('weak');
-                meter.percentage.classList.remove('average');
+                meter.percentage.classList.remove('medium');
                 meter.percentage.classList.remove('strong');
                 if(className) meter.percentage.classList.add(className);
             },
